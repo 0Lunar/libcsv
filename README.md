@@ -168,7 +168,7 @@ freeCsv(csvData);
 You can compile your program using `gcc` or other C compilers:
 
 ```bash
-gcc -o program main.c csv.c -I include/.
+gcc -o program main.c src/csv.c -I include/.
 ```
 
 ## Contributions
