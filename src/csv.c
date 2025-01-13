@@ -33,14 +33,10 @@ It returns a pointer to the CSV structure.
 
 CSV *readCsvFile(FILE *f, const char sp) {
     CSV *root = malloc(sizeof(CSV));
-    if (root == NULL) {
-        perror("Error allocating memory to root");
-        return NULL;
-    }
+    if (!root) return NULL;
 
     root->content = malloc(MAX_LINE_LENGTH * sizeof(char));
-    if (root->content == NULL) {
-        perror("Error allocating memory to content");
+    if (!root->content) {
         free(root);
         return NULL;
     }
@@ -51,32 +47,24 @@ CSV *readCsvFile(FILE *f, const char sp) {
 
     CSV *visit = root;
 
-    char ch;
+    char ch = 0;
     while ((ch = getc(f)) != EOF) {
         uint32_t cnt = 0;
 
-        while (ch != EOF && ch != sp && cnt < MAX_LINE_LENGTH - 1) {
-            if (ch == '\n') {
-                break;
-            }
-            else {
-                visit->content[cnt] = ch;
-                cnt++;
-            }
+        while (ch != EOF && ch != sp && cnt < MAX_LINE_LENGTH && ch != '\n') {
+            visit->content[cnt] = ch;
+            cnt++;
             ch = getc(f);
         }
 
         visit->content[cnt] = '\0';
 
-        if (ch == EOF) {
-            break;
-        }
+        if (ch == EOF) break;
 
 
         if ((cnt > 1 && ch == '\n') || ch == sp){
             visit->next = malloc(sizeof(CSV));
             if (visit->next == NULL) {
-                perror("Error allocating memory for next pointer");
                 free(visit->content);
                 free(root);
                 return NULL;
@@ -84,7 +72,6 @@ CSV *readCsvFile(FILE *f, const char sp) {
 
             visit->next->content = malloc(MAX_LINE_LENGTH * sizeof(char));
             if (visit->next->content == NULL) {
-                perror("Error allocating memory for next content pointer");
                 free(visit->content);
                 free(root);
                 return NULL;
@@ -116,11 +103,9 @@ Writes the content of a CSV structure to a file `f`, using `sp` as the column se
 void writeCsvFile(FILE *f, CSV *root, const char sp) {
     CSV *visitor;
     uint32_t row;
+    uint32_t column = 0;
 
-    if (root == NULL) {
-        perror("Error, root is empity");
-        return;
-    }
+    if (root == NULL) return;
 
     row = 0;
     visitor = root;
@@ -129,14 +114,27 @@ void writeCsvFile(FILE *f, CSV *root, const char sp) {
         while (visitor->row != row) {
             putc('\n', f);
             row++;
+            column = 0;
         }
 
-        for (int i = 0; i < strlen(visitor->content); i++) {
-            putc(visitor->content[i], f);
-        }
+        if (visitor->column == column) {
+            for (int i = 0; i < strlen(visitor->content) && visitor->content[i] != '\r'; i++)
+                putc(visitor->content[i], f);
 
-        if (visitor->next != NULL) {
-            putc(sp, f);
+            if (visitor->next != NULL && visitor->next->row == row)
+                putc(',', f);
+            
+            column++;
+        }
+            
+        else {
+            while (visitor->column != column) {
+                putc(',', f);
+                column++;
+            }
+
+            for (int i = 0; i < strlen(visitor->content) && visitor->content[i] != '\r'; i++)
+                putc(visitor->content[i], f);
         }
 
         visitor = visitor->next;
@@ -183,86 +181,75 @@ void modifyCsvElement(CSV *root, uint32_t row, uint32_t column, const char *cont
     root = csvElement(root, row, column);
 
     if (root == NULL) {
-        perror("Column/row not found");
         return;
     }
 
-    free(root->content);
+    if (root->content)
+        free(root->content);
+
     root->content = malloc(MAX_LINE_LENGTH * sizeof(char));
 
     if (root->content == NULL) {
-        perror("Error allocating memory for content");
         return;
     }
 
     strcpy(root->content, content);
-    printf("%s", root->content);
 }
 
 
 
 
-void deleteCsvColumn(CSV *root, uint32_t row, uint32_t column) {
-    if (column == 0 && row > 0) {
-        root = csvElement(root, row-1, column);
-    }
+CSV *deleteCsvColumn(CSV *root, uint32_t column) {
+    if (!root) return NULL;
 
-    else if (column > 0) {
-        root = csvElement(root, row, column-1);
-    }
-
-    if (root == NULL || root->next == NULL) {
-        perror("Column/row not found");
-        return;
-    }
-
-
-    if ((column == 0 && row > 0) || column > 0) {
-        root->next = root->next->next;
-    }
-
-    else {
+    if (root->column == column) {
         root = root->next;
+
+        while (root->column == column)
+            root->column--;
     }
+
+    CSV *tmp = root;
+
+    while (tmp != NULL && tmp->next != NULL) {
+        if (tmp->next->column == column) {
+            tmp->next = tmp->next->next;
+        }
+        tmp = tmp->next;
+    }
+
+    return root;
 }
 
 
 
 
 CSV *deleteCsvRow(CSV *root, uint32_t row) {
-    CSV *realRoot;
-    CSV *back;
-    CSV *tmp;
+    if (!root) return NULL;
 
-    if (root == NULL) {
-        perror("Error, root pointer NULL");
-        return NULL;
-    }
-
-    realRoot = root;
-
-    //reach the row
-    while (root->row != row) {
-        back = root;
-        root = root->next;
-    }
-
-    if (row > 0) {
-        while (root != NULL && root->row == row) {
-            free(root->content);
-            tmp = root->next;
-            free(root);
-            root = tmp;
-        }
-
-        back->next = root;
-    }
-    else {
-        while (root != NULL && root->row == row) {
+    if (root->row == row) {
+        while(root->row == row)
             root = root->next;
-        }
+        
+        return root;
+    }
 
-        realRoot = root;
+    CSV *tmp = root;
+    CSV *Root = root;
+
+    while (Root != NULL && Root->next != NULL && Root->next->row != row)
+        Root = Root->next;
+
+    tmp = Root->next;
+
+    while (tmp != NULL && tmp->row == row)
+        tmp = tmp->next;
+
+    Root->next = tmp;
+
+    while (tmp != NULL) {
+        tmp->row--;
+        tmp = tmp->next;
     }
 
     return root;
@@ -272,82 +259,69 @@ CSV *deleteCsvRow(CSV *root, uint32_t row) {
 
 
 CSV *addCsvElement(CSV *root, uint32_t row, uint32_t column, const char *content) {
-    CSV *realRoot = root;
-    CSV *newElement = malloc(sizeof(CSV));
-    CSV *tmp = root;
-    
-    if (newElement == NULL) {
-        perror("Error allocating memory to new element");
-        return NULL;
-    }
+    if (!root) return NULL;
 
-    newElement->row = row;
-    newElement->column = column;
-    newElement->content = malloc(MAX_LINE_LENGTH * sizeof(char));
+    CSV *newElement;
+    CSV *tmproot = root;
+    uint32_t columnT, rowT;
 
-    if (newElement->content == NULL) {
-        perror("Error allocating memory for content");
-        free(newElement);
-        return NULL;
-    }
-
+    newElement = malloc(sizeof(CSV));
+    newElement->content = malloc(strlen(content) * sizeof(char));
     strcpy(newElement->content, content);
     newElement->next = NULL;
+    newElement->column = column;
+    newElement->row = row;
+    
+    while (tmproot->next != NULL && tmproot->row < row)
+        tmproot = tmproot->next;
 
-    if (root == NULL) {
-        return newElement;
+    rowT = tmproot->row;
+
+    while (tmproot->next != NULL && tmproot->column < column && tmproot->next->row == rowT)
+        tmproot = tmproot->next;
+    
+    if (!tmproot->next) {
+        tmproot->next = newElement;
+        return tmproot;
     }
 
-    if (column == 0 && row == 0) {
-        newElement->next = root;
-        return newElement;
+    newElement->next = tmproot->next;
+    tmproot->next = newElement;
+
+    columnT = newElement->column;
+    tmproot = newElement->next;
+
+    while (tmproot != NULL && tmproot->column == columnT) {
+        tmproot->column += 1;
+        tmproot = tmproot->next;
     }
 
-    CSV *prev = NULL;
-    while (tmp != NULL && (tmp->row < row || (tmp->row == row && tmp->column < column))) {
-        prev = tmp;
-        tmp = tmp->next;
-    }
-
-    if (prev == NULL) {
-        newElement->next = root;
-        realRoot = newElement;  
-    } else {
-        newElement->next = prev->next;
-        prev->next = newElement;
-    }
-
-    while (tmp != NULL && tmp->row == row) {
-        tmp->column++;
-        tmp = tmp->next;
-    }
-
-    return realRoot;
+    return root;
 }
 
 
 
 
 uint32_t csvRows(CSV *root) {
-    uint32_t rows;
+    uint32_t rows = 1;
     uint32_t row;
 
-    if (root == NULL) {
+    if (!root) {
         return 0;
     }
 
-    row = 0;
-    rows = 0;
+    row = root->row;
+
     while (root != NULL) {
-        if (root->row > rows) {
-            rows = root->row;
-            row++;
+        if (root->row != row) {
+            rows++;
+            row = root->row;
         }
 
         root = root->next;
     }
 
-    return row + 1;
+    return row;
 }
 
 
@@ -428,7 +402,6 @@ CSV *removeEmpityCells(CSV *root) {
 
 void findAndReplace(CSV *root, const char *string, const char *newString) {
     if (root == NULL || string == NULL || newString == NULL) {
-        perror("Invalid argument(s) provided.");
         return;
     }
 
@@ -438,7 +411,6 @@ void findAndReplace(CSV *root, const char *string, const char *newString) {
             root->content = malloc((strlen(newString) + 1) * sizeof(char));
 
             if (root->content == NULL) {
-                perror("Error allocating memory to pointer content");
                 return;
             }
 
@@ -463,7 +435,6 @@ CSV *findAllCsvStrings(CSV *root, const char *string) {
                 newCsv = malloc(sizeof(CSV));
 
                 if (newCsv == NULL) {
-                    perror("Error allocating memory to newCsv");
                     return NULL;
                 }
 
@@ -473,7 +444,6 @@ CSV *findAllCsvStrings(CSV *root, const char *string) {
                 newCsv->next = malloc(sizeof(CSV));
 
                 if (newCsv->next == NULL) {
-                    perror("Error allocating memory to newCsv");
                     return NULL;
                 }
 
@@ -483,63 +453,12 @@ CSV *findAllCsvStrings(CSV *root, const char *string) {
             newCsv->content = malloc((strlen(root->content) + 1) * sizeof(char));
 
             if (newCsv->content == NULL) {
-                perror("Error allocating memory to newCsv content");
                 return NULL;
             }
 
             newCsv->column = root->column;
             newCsv->row = root->row;
             strcpy(newCsv->content, root->content);
-            newCsv->next = NULL;
-        }
-
-        root = root->next;
-    }
-
-    return newCsvRoot;
-}
-
-
-CSV *columnElements(CSV *root, uint32_t column) {
-    CSV *newCsv;
-    CSV *newCsvRoot;
-
-    newCsv = NULL;
-    newCsvRoot = NULL;
-
-    while (root != NULL) {
-        if (root->column == column) {
-            if (newCsv == NULL) {
-                newCsv = malloc(sizeof(CSV));
-
-                if (newCsv == NULL) {
-                    perror("Error allocating memory to newCsv");
-                    return NULL;
-                }
-
-                newCsvRoot = newCsv;
-            }
-            else {
-                newCsv->next = malloc(sizeof(CSV));
-                
-                if (newCsv->next == NULL) {
-                    perror("Error allocating memory to next newCsv");
-                    return NULL;
-                }
-
-                newCsv = newCsv->next;
-            }
-
-            newCsv->content = malloc((strlen(root->content) + 1) * sizeof(char));
-
-            if (newCsv->content == NULL) {
-                perror("Error allocating memory to newCsv content");
-                return NULL;
-            }
-
-            strcpy(newCsv->content, root->content);
-            newCsv->row = root->row;
-            newCsv->column = root->column;
             newCsv->next = NULL;
         }
 
