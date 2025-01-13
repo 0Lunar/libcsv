@@ -282,7 +282,7 @@ CSV *addCsvElement(CSV *root, uint32_t row, uint32_t column, const char *content
     
     if (!tmproot->next) {
         tmproot->next = newElement;
-        return tmproot;
+        return root;
     }
 
     newElement->next = tmproot->next;
