@@ -62,7 +62,7 @@ CSV *readCsvFile(FILE *f, const char sp) {
         if (ch == EOF) break;
 
 
-        if ((cnt > 1 && ch == '\n') || ch == sp){
+        if ((ch == '\n') || ch == sp){
             visit->next = malloc(sizeof(CSV));
             if (visit->next == NULL) {
                 free(visit->content);
@@ -111,7 +111,7 @@ void writeCsvFile(FILE *f, CSV *root, const char sp) {
     visitor = root;
 
     while (visitor != NULL) {
-        while (visitor->row != row) {
+        while (visitor->row > row) {
             putc('\n', f);
             row++;
             column = 0;
@@ -128,7 +128,7 @@ void writeCsvFile(FILE *f, CSV *root, const char sp) {
         }
             
         else {
-            while (visitor->column != column) {
+            while (visitor->column > column) {
                 putc(',', f);
                 column++;
             }
