@@ -403,26 +403,6 @@ CSV *csvRemoveEmptyCells(CSV *root) {
 }
 
 
-void csvFindAndReplace(CSV *root, const char *string, const char *newString) {
-    if (!root || !string || !newString) return;
-
-    while (root != NULL) {
-        if (strcmp(root->content, string) == 0) {
-            free(root->content);
-            root->content = malloc((strlen(newString) + 1) * sizeof(char));
-
-            if (root->content == NULL) {
-                return;
-            }
-
-            strcpy(root->content, newString);
-        }
-
-        root = root->next;
-    }
-}
-
-
 CSV *csvFindAllStrings(CSV *root, const char *string) {
     if (!root || !string) return NULL;
     
