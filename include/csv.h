@@ -20,23 +20,37 @@ struct csvType {
 typedef struct csvType CSV;
 
 
+//create
+CSV *csvCreateList();
+
+//IO
 CSV *csvReadFile(FILE *f, const char sp);
 void csvWriteFile(FILE *f, CSV *root, const char sp);
+
+//get and set
 CSV *csvGetElement(CSV *elements, uint32_t row, uint32_t column);
 void csvUpdateElement(CSV *root, uint32_t row, uint32_t column, const char *content);
-CSV *csvDeleteColumn(CSV *root, uint32_t column);
-CSV *csvFindString(CSV *elements, const char *string);
 CSV *csvAddElement(CSV *root, uint32_t row, uint32_t column, const char *content);
-uint32_t csvRows(CSV *root);
-uint32_t csvColumns(CSV *root, uint32_t row);
-void csvFree(CSV *root);
+CSV *csvAppendRowContent(CSV *root, uint32_t row, const char *string);
+
+//find
+CSV *csvFindString(CSV *elements, const char *string);
+CSV *csvFindAllStrings(CSV *root, const char *string);
+
+//replace
+void csvFindAndReplace(CSV *root, const char *toFind, const char *string);
+void csvFindAndReplaceAll(CSV *root, const char *toFind, const char *string);
+
+//remove
+CSV *csvDeleteColumn(CSV *root, uint32_t column);
 CSV *csvDeleteRow(CSV *root, uint32_t row);
 CSV *csvRemoveEmptyCells(CSV *root);
-void csvFindAndReplace(CSV *root, const char *string, const char *newString);
-CSV *csvFindAllStrings(CSV *root, const char *string);
-void csvFindAndReplaceAll(CSV *root, const char *toFind, const char *string);
-CSV *csvCreateList();
-CSV *csvAppendRowContent(CSV *root, uint32_t row, const char *string);
-void csvSetElementContent(CSV *root, uint32_t row, uint32_t column, const char *string);
+
+//info
+uint32_t csvRows(CSV *root);
+uint32_t csvColumns(CSV *root, uint32_t row);
+
+//free
+void csvFree(CSV *root);
 
 #endif

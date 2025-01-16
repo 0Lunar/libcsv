@@ -188,14 +188,14 @@ void csvUpdateElement(CSV *root, uint32_t row, uint32_t column, const char *cont
     
     root = csvGetElement(root, row, column);
 
+    if (!root) return;
+
     if (root->content)
         free(root->content);
 
     root->content = malloc(MAX_LINE_LENGTH * sizeof(char));
 
-    if (root->content == NULL) {
-        return;
-    }
+    if (!root->content) return;
 
     strcpy(root->content, content);
 }
@@ -472,8 +472,26 @@ CSV *csvFindAllStrings(CSV *root, const char *string) {
 }
 
 
+void csvFindAndReplace(CSV *root, const char *toFind, const char *string) {
+    if (!root || !string || !toFind) return;
+
+    while (root != NULL) {
+        if (root->content != NULL && strcmp(toFind, root->content) == 0) {
+            free(root->content);
+
+            root->content = malloc(strlen(string));
+            strcpy(root->content, string);
+
+            break;
+        }
+
+        root = root->next;
+    }
+}
+
+
 void csvFindAndReplaceAll(CSV *root, const char *toFind, const char *string) {
-    if (!root || !string) return;
+    if (!root || !string || !toFind) return;
 
     while (root != NULL) {
         if (root->content != NULL && strcmp(toFind, root->content) == 0) {
@@ -526,20 +544,4 @@ CSV *csvAppendRowContent(CSV *root, uint32_t row, const char *string) {
     }
 
     return root;
-}
-
-
-void csvSetElementContent(CSV *root, uint32_t row, uint32_t column, const char *string) {
-    if (!root || !string) return;
-
-    while (root != NULL && root->row != row || root->column != column)
-        root = root->next;
-
-    if (!root) return;
-
-    if (root->content)
-        free(root->content);
-    
-    root->content = malloc(strlen(string));
-    strcpy(root->content, string);
 }
