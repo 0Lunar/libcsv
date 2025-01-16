@@ -18,6 +18,8 @@
     - [Delete a row](#delete-a-row)
     - [Remove empity cells](#remove-empity-cells)
     - [Get the number of rows](#get-the-number-of-rows)
+    - [Get the number of columns](#get-the-number-of-columns)
+    - [Free a CSV list](#free-the-list)
 
 
 ## Introduction
