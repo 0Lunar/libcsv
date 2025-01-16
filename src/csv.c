@@ -193,7 +193,7 @@ void csvUpdateElement(CSV *root, uint32_t row, uint32_t column, const char *cont
     if (root->content)
         free(root->content);
 
-    root->content = malloc(MAX_LINE_LENGTH * sizeof(char));
+    root->content = malloc(strlen(content));
 
     if (!root->content) return;
 
@@ -278,6 +278,11 @@ CSV *csvAddElement(CSV *root, uint32_t row, uint32_t column, const char *content
     
     while (tmproot->next != NULL && tmproot->row < row)
         tmproot = tmproot->next;
+
+    if (tmproot == root) {
+        newElement->next = root;
+        return newElement;
+    }
 
     rowT = tmproot->row;
 
@@ -486,13 +491,16 @@ void csvFindAndReplaceAll(CSV *root, const char *toFind, const char *string) {
 }
 
 
-CSV *csvCreateList() {
+CSV *csvCreateNode(uint32_t row, uint32_t column) {
     CSV *newList;
 
     newList = malloc(sizeof(CSV));
 
     if (newList)
         memset((void *)newList, 0, sizeof(CSV));
+    
+    newList->row = row;
+    newList->column = column;
 
     return newList;
 }

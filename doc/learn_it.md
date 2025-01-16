@@ -6,7 +6,8 @@
 - [Il tipo CSV](#il-tipo-csv)
 - [Leggere un file CSV](#leggere-un-file-csv)
 - [Scrivere su un file CSV](#scrivere-su-un-file-csv)
-- [Manipolare oggetti CSV](#manipolare-oggetti-csv)  
+- [Manipolare oggetti CSV](#manipolare-oggetti-csv) 
+  - [Creare un nodo CSV] 
   - [Ottenere un elemento](#ottenere-un-elemento)  
   - [Aggiornare il contenuto](#aggiornare-il-contenuto)  
   - [Aggiungere un nuovo nodo](#aggiungere-un-nuovo-nodo)  
@@ -74,6 +75,18 @@ void csvWriteFile(FILE *f, CSV *root, const char sp)
 ## Manipolare oggetti CSV
 
 Per manipolare gli `oggetti CSV` nella lista, ci sono molte funzioni disponibili. In questa sezione le elencheremo tutte.
+
+### Creare un nodo CSV
+
+Per creare un nodo CSV esiste la funzione `csvCreateNode` che richiede 2 parametri:
+- La righa `(unsigned int)`
+- La colonna `(unsigned int)`
+
+```C
+CSV *csvCreateNode(uint32_t row, uint32_t column)
+```
+
+La funzione restituirà il `puntatore` del nuovo nodo
 
 ### Ottenere un elemento
 

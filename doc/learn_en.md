@@ -7,6 +7,7 @@
 - [Reading a CSV file](#reading-a-csv-file)
 - [Writing on the CSV file](#writing-on-the-csv-file)
 - [Manipulating CSV objects](#manipulating-csv-objects)
+    - [Create a CSV node](#create-a-csv-node)
     - [Get an item](#get-an-item)
     - [Update the content](#update-the-content)
     - [Add a new node](#add-a-new-node)
@@ -78,6 +79,18 @@ void csvWriteFile(FILE *f, CSV *root, const char sp)
 ## Manipulating CSV objects
 
 To manipulate `csv objects` in the list there are many functions that allow you to do everything and in this section we will list them all.
+
+### Create a CSV node
+
+To create a CSV node there is the `csvCreateNode` function which requires 2 parameters:
+ - The row `(unsigned int)`
+ - The column `(unsigned int)`
+
+```C
+CSV *csvCreateNode(uint32_t row, uint32_t column)
+```
+
+The function will return the `pointer` of the new node.
 
 ### Get an item
 

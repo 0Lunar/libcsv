@@ -21,7 +21,7 @@ typedef struct csvType CSV;
 
 
 //create
-CSV *csvCreateList();
+CSV *csvCreateNode(uint32_t row, uint32_t column);
 
 //IO
 CSV *csvReadFile(FILE *f, const char sp);
