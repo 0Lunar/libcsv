@@ -31,7 +31,9 @@ reads a CSV file from the file pointer `f` and uses `sp` as the column separator
 It returns a pointer to the CSV structure.
 */
 
-CSV *readCsvFile(FILE *f, const char sp) {
+CSV *csvReadFile(FILE *f, const char sp) {
+    if (!f || sp < 0) return NULL;
+
     CSV *root = malloc(sizeof(CSV));
     if (!root) return NULL;
 
@@ -51,7 +53,7 @@ CSV *readCsvFile(FILE *f, const char sp) {
     while ((ch = getc(f)) != EOF) {
         uint32_t cnt = 0;
 
-        while (ch != EOF && ch != sp && cnt < MAX_LINE_LENGTH && ch != '\n') {
+        while (ch != EOF && ch != sp && cnt < MAX_LINE_LENGTH && ch != '\n' && ch != '\r') {
             visit->content[cnt] = ch;
             cnt++;
             ch = getc(f);
@@ -62,7 +64,7 @@ CSV *readCsvFile(FILE *f, const char sp) {
         if (ch == EOF) break;
 
 
-        if ((ch == '\n') || ch == sp){
+        if ((ch == '\n' || ch == '\r') || ch == sp){
             visit->next = malloc(sizeof(CSV));
             if (visit->next == NULL) {
                 free(visit->content);
@@ -100,12 +102,13 @@ CSV *readCsvFile(FILE *f, const char sp) {
 Writes the content of a CSV structure to a file `f`, using `sp` as the column separator.
 */
 
-void writeCsvFile(FILE *f, CSV *root, const char sp) {
+void csvWriteFile(FILE *f, CSV *root, const char sp) {
+    if (!f || !root || sp < 0) return;
+
     CSV *visitor;
     uint32_t row;
     uint32_t column = 0;
 
-    if (root == NULL) return;
 
     row = 0;
     visitor = root;
@@ -146,7 +149,9 @@ void writeCsvFile(FILE *f, CSV *root, const char sp) {
 Returns a pointer to the element at the specified `row` and `column`.
 */
 
-CSV *csvElement(CSV *elements, uint32_t row, uint32_t column) {
+CSV *csvGetElement(CSV *elements, uint32_t row, uint32_t column) {
+    if (!elements) return NULL;
+
     while (elements != NULL && elements->row != row) {
         elements = elements->next;
     }
@@ -163,7 +168,9 @@ CSV *csvElement(CSV *elements, uint32_t row, uint32_t column) {
 Return a pointer of the first element corrisponding to the `string`.
 */
 
-CSV *findCsvString(CSV *elements, const char *string) {
+CSV *csvFindString(CSV *elements, const char *string) {
+    if (!elements || !string) return NULL;
+
     while (elements != NULL && strcmp(string, elements->content) != 0) {
         elements = elements->next;
     }
@@ -176,13 +183,10 @@ CSV *findCsvString(CSV *elements, const char *string) {
 Modifies the content of the element at the specified position with the new content provided.
 */
 
-void modifyCsvElement(CSV *root, uint32_t row, uint32_t column, const char *content) {
+void csvUpdateElement(CSV *root, uint32_t row, uint32_t column, const char *content) {
+    if (!root || !content) return;
     
-    root = csvElement(root, row, column);
-
-    if (root == NULL) {
-        return;
-    }
+    root = csvGetElement(root, row, column);
 
     if (root->content)
         free(root->content);
@@ -199,7 +203,7 @@ void modifyCsvElement(CSV *root, uint32_t row, uint32_t column, const char *cont
 
 
 
-CSV *deleteCsvColumn(CSV *root, uint32_t column) {
+CSV *csvDeleteColumn(CSV *root, uint32_t column) {
     if (!root) return NULL;
 
     if (root->column == column) {
@@ -224,7 +228,7 @@ CSV *deleteCsvColumn(CSV *root, uint32_t column) {
 
 
 
-CSV *deleteCsvRow(CSV *root, uint32_t row) {
+CSV *csvDeleteRow(CSV *root, uint32_t row) {
     if (!root) return NULL;
 
     if (root->row == row) {
@@ -258,8 +262,8 @@ CSV *deleteCsvRow(CSV *root, uint32_t row) {
 
 
 
-CSV *addCsvElement(CSV *root, uint32_t row, uint32_t column, const char *content) {
-    if (!root) return NULL;
+CSV *csvAddElement(CSV *root, uint32_t row, uint32_t column, const char *content) {
+    if (!root || !content) return NULL;
 
     CSV *newElement;
     CSV *tmproot = root;
@@ -303,12 +307,10 @@ CSV *addCsvElement(CSV *root, uint32_t row, uint32_t column, const char *content
 
 
 uint32_t csvRows(CSV *root) {
+    if (!root) return 0;
+
     uint32_t rows = 1;
     uint32_t row;
-
-    if (!root) {
-        return 0;
-    }
 
     row = root->row;
 
@@ -328,12 +330,9 @@ uint32_t csvRows(CSV *root) {
 
 
 uint32_t csvColumns(CSV *root, uint32_t row) {
+    if (!root) return 0;
+    
     uint32_t columns;
-
-    if (root == NULL) {
-        return 0;
-    }
-
 
     // reach the row
     while (root != NULL && root->row != row) {
@@ -357,7 +356,9 @@ uint32_t csvColumns(CSV *root, uint32_t row) {
 
 
 
-void freeCsv(CSV *root) {
+void csvFree(CSV *root) {
+    if (!root) return;
+
     CSV *tmp;
     CSV *toFree;
 
@@ -375,7 +376,9 @@ void freeCsv(CSV *root) {
 
 
 
-CSV *removeEmpityCells(CSV *root) {
+CSV *csvRemoveEmptyCells(CSV *root) {
+    if (!root) return NULL;
+
     CSV *realRoot;
     CSV *back;
     
@@ -400,10 +403,8 @@ CSV *removeEmpityCells(CSV *root) {
 }
 
 
-void findAndReplace(CSV *root, const char *string, const char *newString) {
-    if (root == NULL || string == NULL || newString == NULL) {
-        return;
-    }
+void csvFindAndReplace(CSV *root, const char *string, const char *newString) {
+    if (!root || !string || !newString) return;
 
     while (root != NULL) {
         if (strcmp(root->content, string) == 0) {
@@ -422,7 +423,9 @@ void findAndReplace(CSV *root, const char *string, const char *newString) {
 }
 
 
-CSV *findAllCsvStrings(CSV *root, const char *string) {
+CSV *csvFindAllStrings(CSV *root, const char *string) {
+    if (!root || !string) return NULL;
+    
     CSV *newCsvRoot;
     CSV *newCsv;
 
@@ -466,4 +469,77 @@ CSV *findAllCsvStrings(CSV *root, const char *string) {
     }
 
     return newCsvRoot;
+}
+
+
+void csvFindAndReplaceAll(CSV *root, const char *toFind, const char *string) {
+    if (!root || !string) return;
+
+    while (root != NULL) {
+        if (root->content != NULL && strcmp(toFind, root->content) == 0) {
+            free(root->content);
+
+            root->content = malloc(strlen(string));
+            strcpy(root->content, string);
+        }
+
+        root = root->next;
+    }
+}
+
+
+CSV *csvCreateList() {
+    CSV *newList;
+
+    newList = malloc(sizeof(CSV));
+
+    if (newList)
+        memset((void *)newList, 0, sizeof(CSV));
+
+    return newList;
+}
+
+
+CSV *csvAppendRowContent(CSV *root, uint32_t row, const char *string) {
+    if (!root) return NULL;
+
+    CSV *tmp = root;
+    CSV *new = malloc(sizeof(CSV));
+
+    while (tmp->next != NULL && tmp->next->row <= row)
+        tmp = tmp->next;
+
+    new->row = row;
+    new->content = malloc(strlen(string));
+    strcpy(new->content, string);
+
+    if (!tmp->next) {
+        new->column = 0;
+        new->next = NULL;
+        tmp->next = new;
+    }
+
+    else {
+        new->column = tmp->column + 1;
+        new->next = tmp->next;
+        tmp->next = new;
+    }
+
+    return root;
+}
+
+
+void csvSetElementContent(CSV *root, uint32_t row, uint32_t column, const char *string) {
+    if (!root || !string) return;
+
+    while (root != NULL && root->row != row || root->column != column)
+        root = root->next;
+
+    if (!root) return;
+
+    if (root->content)
+        free(root->content);
+    
+    root->content = malloc(strlen(string));
+    strcpy(root->content, string);
 }
