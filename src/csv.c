@@ -23,7 +23,7 @@ SOFTWARE.
 
 */
 
-#include "csv.h"
+#include <csv.h>
 
 
 /*
@@ -101,7 +101,6 @@ CSV *csvReadFile(FILE *f, const char sp) {
 /*
 Writes the content of a CSV structure to a file `f`, using `sp` as the column separator.
 */
-
 void csvWriteFile(FILE *f, CSV *root, const char sp) {
     if (!f || !root || sp < 0) return;
 
@@ -143,7 +142,6 @@ void csvWriteFile(FILE *f, CSV *root, const char sp) {
         visitor = visitor->next;
     }
 }
-
 
 /*
 Returns a pointer to the element at the specified `row` and `column`.
@@ -193,7 +191,7 @@ void csvUpdateElement(CSV *root, uint32_t row, uint32_t column, const char *cont
     if (root->content)
         free(root->content);
 
-    root->content = malloc(strlen(content));
+    root->content = malloc(strlen(content) + 1);
 
     if (!root->content) return;
 
@@ -270,7 +268,7 @@ CSV *csvAddElement(CSV *root, uint32_t row, uint32_t column, const char *content
     uint32_t columnT, rowT;
 
     newElement = malloc(sizeof(CSV));
-    newElement->content = malloc(strlen(content) * sizeof(char));
+    newElement->content = malloc(strlen(content) * sizeof(char) + 1);
     strcpy(newElement->content, content);
     newElement->next = NULL;
     newElement->column = column;
@@ -328,7 +326,7 @@ uint32_t csvRows(CSV *root) {
         root = root->next;
     }
 
-    return row;
+    return rows;
 }
 
 
@@ -378,35 +376,30 @@ void csvFree(CSV *root) {
     }
 }
 
-
-
-
 CSV *csvRemoveEmptyCells(CSV *root) {
     if (!root) return NULL;
 
-    CSV *realRoot;
-    CSV *back;
-    
-    realRoot = root;
-    back = root;
+    CSV *realRoot = root;
+    CSV *prev = NULL;
 
     while (root != NULL) {
         if (strlen(root->content) == 0) {
-            if (root->column == 0 && root->row == 0) {
-                realRoot = realRoot->next;
+            if (prev == NULL) {
+                realRoot = root->next;
+            } else {
+                prev->next = root->next;
             }
-            else {
-                back->next = root->next;
-            }
+            free(root->content);
+            free(root);
+            root = prev ? prev->next : realRoot;
+        } else {
+            prev = root;
+            root = root->next;
         }
-
-        back = root;
-        root = root->next;
     }
 
     return realRoot;
 }
-
 
 CSV *csvFindAllStrings(CSV *root, const char *string) {
     if (!root || !string) return NULL;
@@ -464,7 +457,7 @@ void csvFindAndReplace(CSV *root, const char *toFind, const char *string) {
         if (root->content != NULL && strcmp(toFind, root->content) == 0) {
             free(root->content);
 
-            root->content = malloc(strlen(string));
+            root->content = malloc(strlen(string) + 1);
             strcpy(root->content, string);
 
             break;
@@ -496,40 +489,37 @@ CSV *csvCreateNode(uint32_t row, uint32_t column) {
 
     newList = malloc(sizeof(CSV));
 
-    if (newList)
+    if (newList) {
         memset((void *)newList, 0, sizeof(CSV));
     
-    newList->row = row;
-    newList->column = column;
-
+    	newList->content = NULL; 
+    	newList->row = row;
+    	newList->column = column;
+    }
     return newList;
 }
-
 
 CSV *csvAppendRowContent(CSV *root, uint32_t row, const char *string) {
     if (!root) return NULL;
 
     CSV *tmp = root;
     CSV *new = malloc(sizeof(CSV));
+    if (!new) return NULL;
+
+    new->row = row;
+    new->content = malloc(strlen(string) + 1);
+    if (!new->content) {
+        free(new);
+        return NULL;
+    }
+    strcpy(new->content, string);
 
     while (tmp->next != NULL && tmp->next->row <= row)
         tmp = tmp->next;
 
-    new->row = row;
-    new->content = malloc(strlen(string));
-    strcpy(new->content, string);
-
-    if (!tmp->next) {
-        new->column = 0;
-        new->next = NULL;
-        tmp->next = new;
-    }
-
-    else {
-        new->column = tmp->column + 1;
-        new->next = tmp->next;
-        tmp->next = new;
-    }
+    new->column = tmp->column + 1;
+    new->next = tmp->next;
+    tmp->next = new;
 
     return root;
 }
